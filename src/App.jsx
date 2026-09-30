@@ -3,6 +3,8 @@ import Hoy from './pages/Hoy';
 import CrearEvento from './pages/CrearEvento';
 import DetalleEvento from './pages/DetalleEvento';
 import Progreso from './pages/Progreso';
+import Loguin from './pages/loguin';
+import Registro from './pages/registro';
 
 function App() {
   return (
@@ -10,6 +12,8 @@ function App() {
       <Routes>
         {/* Redirigimos la ruta raíz a la vista principal del proyecto */}
         <Route path="/" element={<Navigate to="/hoy" />} />
+        <Route path="/login" element={<Loguin />} />
+        <Route path="/registro" element={<Registro />} />
 
         {/* Rutas requeridas por el documento */}
         <Route path="/hoy" element={<Hoy />} />
