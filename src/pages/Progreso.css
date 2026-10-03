@@ -1,0 +1,293 @@
+/* Progreso.css */
+.prog-page {
+  min-height: 100svh;
+  background-color: #f8f8f2;
+  background-image: radial-gradient(#d9e4d7 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+  color: #263a31;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+.prog-container {
+  width: min(100% - 48px, 860px);
+  margin: 0 auto;
+  padding: 44px 0 60px;
+}
+
+/* ── Cabecera ── */
+.prog-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 36px;
+}
+
+.prog-kicker {
+  margin: 0 0 6px;
+  color: #89938a;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.prog-titulo {
+  margin: 0 0 4px;
+  color: #20392d;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 40px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.prog-subtitulo {
+  margin: 0;
+  color: #718077;
+  font-size: 14px;
+}
+
+.prog-refresh {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border: 1px solid #d5e0d1;
+  border-radius: 8px;
+  color: #387454;
+  background: #eef5eb;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background 140ms ease;
+}
+.prog-refresh:hover { background: #ddecd7; }
+
+/* ── Lista de eventos ── */
+.prog-eventos-lista { display: grid; gap: 16px; }
+
+/* ── Tarjeta de evento ── */
+.prog-evento-card {
+  padding: 20px 22px;
+  border: 1px solid #e2e8df;
+  border-radius: 10px;
+  background: #fffefa;
+  box-shadow: 0 2px 10px rgba(38, 58, 49, 0.05);
+  transition: box-shadow 150ms ease;
+}
+.prog-evento-card:hover { box-shadow: 0 5px 18px rgba(38, 58, 49, 0.09); }
+
+.prog-evento-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.prog-evento-nombre {
+  display: block;
+  margin: 0 0 4px;
+  color: #1e3329;
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: color 130ms;
+}
+.prog-evento-nombre:hover { color: #246b4d; text-decoration: underline; }
+
+.prog-evento-meta {
+  margin: 0;
+  color: #879188;
+  font-size: 12px;
+}
+
+.prog-evento-actions {
+  display: flex;
+  align-items: center;
+}
+
+.prog-action-delete {
+  background: transparent;
+  border: none;
+  color: #9aa49b;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  transition: color 150ms ease;
+}
+.prog-action-delete:hover {
+  color: #d84b4b;
+}
+
+.prog-evento-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+/* ── Barra de progreso ── */
+.prog-barra-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.prog-barra {
+  flex: 1;
+  height: 5px;
+  border-radius: 3px;
+  background: #e4ebe0;
+  overflow: hidden;
+}
+
+.prog-barra-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #246b4d;
+  transition: width 400ms ease;
+}
+
+.prog-barra-pct {
+  color: #879188;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Lista de tareas dentro del evento ── */
+.prog-tareas-lista {
+  display: grid;
+  gap: 8px;
+  padding-top: 4px;
+  border-top: 1px solid #eef1ec;
+}
+
+.prog-tarea {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.prog-tarea-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.prog-tarea-titulo {
+  display: block;
+  color: #263a31;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.prog-tarea-meta {
+  display: block;
+  color: #9aa49b;
+  font-size: 11px;
+}
+
+.prog-tarea-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.prog-hechas-label {
+  margin: 4px 0 0;
+  color: #9aa49b;
+  font-size: 11px;
+  font-style: italic;
+}
+
+.prog-sin-tareas-msg {
+  margin: 4px 0 0;
+  color: #9aa49b;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Badges ── */
+.prog-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.badge-vencida    { color: #fff;     background: #c0392b; }
+.badge-hoy        { color: #fff;     background: #1a5ca8; }
+.badge-proxima    { color: #4a5e50;  background: #e3ece0; }
+.badge-hecho      { color: #387454;  background: #d8edd5; }
+.badge-sin-tareas { color: #79837a;  background: #edeee9; }
+
+/* ── Botones de acción ── */
+.prog-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border: 1px solid #d5e0d1;
+  border-radius: 20px;
+  color: #387454;
+  background: #eef5eb;
+  cursor: pointer;
+  font: 700 11px 'Trebuchet MS', 'Segoe UI', sans-serif;
+  text-decoration: none;
+  transition: background 130ms ease, border-color 130ms ease;
+}
+.prog-action:hover { background: #e0eeda; border-color: #a4c49c; }
+
+.prog-action-primary {
+  color: white;
+  background: #246b4d;
+  border-color: #246b4d;
+}
+.prog-action-primary:hover { background: #19543c; border-color: #19543c; }
+
+/* ── Estados ── */
+.prog-estado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 60px 24px;
+  text-align: center;
+  color: #718077;
+  font-size: 14px;
+}
+.prog-estado-error { color: #b34438; }
+
+.prog-vacio-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: #246b4d;
+  background: #e3f0e0;
+  font-size: 22px;
+}
+
+.prog-spinner {
+  display: block;
+  width: 32px;
+  aspect-ratio: 1;
+  border: 3px solid #d5e0d1;
+  border-top-color: #246b4d;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Responsive ── */
+@media (max-width: 540px) {
+  .prog-titulo { font-size: 32px; }
+  .prog-evento-header { flex-direction: column; }
+  .prog-tarea { flex-wrap: wrap; }
+}

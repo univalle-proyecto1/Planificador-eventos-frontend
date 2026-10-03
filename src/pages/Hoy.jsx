@@ -1,65 +1,127 @@
+import { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import './Hoy.css';
+
+const tiposEvento = [
+	{ id: 'cumpleanos', nombre: 'Cumpleaños', descripcion: 'Un día para celebrar a lo grande.', icono: '🎂', color: 'coral' },
+	{ id: 'fiesta', nombre: 'Fiesta', descripcion: 'Una buena razón para reunirnos.', icono: '🎉', color: 'amarillo' },
+	{ id: 'compromiso', nombre: 'Compromiso', descripcion: 'El comienzo de una gran historia.', icono: '💍', color: 'rosa' },
+	{ id: 'boda', nombre: 'Boda', descripcion: 'Cada detalle de un día inolvidable.', icono: '💐', color: 'verde' },
+	{ id: 'baby-shower', nombre: 'Baby shower', descripcion: 'Bienvenida para alguien especial.', icono: '🍼', color: 'azul' },
+	{ id: 'graduacion', nombre: 'Graduación', descripcion: 'Celebra todo lo que has logrado.', icono: '🎓', color: 'naranja' },
+	{ id: 'corporativo', nombre: 'Evento corporativo', descripcion: 'Encuentros que impulsan nuevas ideas.', icono: '✨', color: 'lima' },
+	{ id: 'otro', nombre: 'Otra ocasión', descripcion: 'Tu evento, a tu manera.', icono: '✳', color: 'lavanda' },
+];
+
 export default function Hoy() {
-    // Datos simulados (mock) para el prototipo visual
-    const gestionesUrgentes = [
-        {
-            id: 1,
-            evento: "Boda Ana y Carlos",
-            tarea: "Confirmar cantidad final del catering",
-            tiempoEstimado: "1 hora",
-            prioridad: "Alta"
-        },
-        {
-            id: 2,
-            evento: "Conferencia Tech Yumbo",
-            tarea: "Pagar anticipo de proveedores de sonido",
-            tiempoEstimado: "2 horas",
-            prioridad: "Crítica"
-        }
-    ];
+	const navigate = useNavigate();
+	const [tipoSeleccionado, setTipoSeleccionado] = useState('');
+	const [tooltipAbierto, setTooltipAbierto] = useState(false);
+	const tooltipRef = useRef(null);
 
-    return (
-        <div style={{ padding: '20px', maxWidth: '800px', margin: '0 auto', fontFamily: 'sans-serif' }}>
-            <h1>Tablero de Hoy</h1>
-            <p style={{ color: '#aaa' }}>Gestiones logísticas que requieren tu atención inmediata.</p>
+	useEffect(() => {
+		if (!tooltipAbierto) return;
+		function handleClick(e) {
+			if (tooltipRef.current && !tooltipRef.current.contains(e.target)) {
+				setTooltipAbierto(false);
+			}
+		}
+		document.addEventListener('mousedown', handleClick);
+		return () => document.removeEventListener('mousedown', handleClick);
+	}, [tooltipAbierto]);
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '30px' }}>
-                {gestionesUrgentes.map(gestion => (
-                    <div key={gestion.id} style={{
-                        borderLeft: '5px solid #ff4757',
-                        padding: '20px',
-                        borderRadius: '4px',
-                        backgroundColor: '#2f3542',
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <span style={{
-                                    backgroundColor: '#ff4757',
-                                    color: 'white',
-                                    padding: '3px 8px',
-                                    borderRadius: '12px',
-                                    fontSize: '12px',
-                                    fontWeight: 'bold'
-                                }}>
-                                    {gestion.prioridad}
-                                </span>
-                                <h3 style={{ margin: '10px 0 5px 0' }}>{gestion.tarea}</h3>
-                                <p style={{ margin: '0', color: '#ced6e0' }}><strong>Evento:</strong> {gestion.evento}</p>
-                                <p style={{ margin: '5px 0 0 0', color: '#a4b0be', fontSize: '14px' }}>⏱ Estimado: {gestion.tiempoEstimado}</p>
-                            </div>
+	function continuar() {
+		if (tipoSeleccionado) {
+			navigate(`/crear?tipo=${tipoSeleccionado}`);
+		}
+	}
 
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button style={{ padding: '8px 15px', backgroundColor: '#ffa502', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>
-                                    Posponer
-                                </button>
-                                <button style={{ padding: '8px 15px', backgroundColor: '#2ed573', border: 'none', borderRadius: '4px', color: 'white', cursor: 'pointer' }}>
-                                    Hecho
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+	return (
+		<main className="event-home">
+			<header className="event-topbar">
+				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+					<span className="event-brand-mark" aria-hidden="true">E</span>
+					<span>EventPro</span>
+				</Link>
+				<nav className="event-nav" aria-label="Navegación principal">
+					<span className="event-nav-current">Crear evento</span>
+					<Link to="/progreso">Mis eventos</Link>
+				</nav>
+				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
+			</header>
+
+			<section className="event-intro" aria-labelledby="event-title">
+				<div className="event-intro-copy">
+					<p className="event-kicker"><span /> UN MOTIVO PARA REUNIRNOS</p>
+					<h1 id="event-title">¿Qué vamos<br />a celebrar?</h1>
+					<p className="event-intro-text">Elige la ocasión. Nosotros ponemos en orden las ideas.</p>
+				</div>
+				<div className="event-intro-art" aria-hidden="true">
+					<span className="art-sun">✳</span>
+					<span className="art-ribbon">AQUÍ EMPIEZA<br />ALGO BUENO</span>
+					<span className="art-orbit" />
+				</div>
+			</section>
+
+			<section className="event-chooser" aria-labelledby="occasion-title">
+				<div className="chooser-heading">
+					<div>
+						<p className="section-kicker">PRIMER PASO</p>
+						<h2 id="occasion-title">Elige el tipo de evento</h2>
+					</div>
+					<div className="chooser-heading-right">
+						<p className="selection-count">{tipoSeleccionado ? '1 ocasión seleccionada' : 'Selecciona una ocasión'}</p>
+						<div className="orden-tooltip-wrap" ref={tooltipRef}>
+							<button
+								className="orden-btn"
+								type="button"
+								aria-expanded={tooltipAbierto}
+								onClick={() => setTooltipAbierto((v) => !v)}
+							>
+								<span className="orden-btn-icon" aria-hidden="true">?</span>
+								¿Cómo se ordena?
+							</button>
+							{tooltipAbierto && (
+								<div className="orden-popover" role="tooltip">
+									<strong className="orden-popover-title">Regla de prioridad</strong>
+									<p>
+										Los tipos de evento se agrupan por popularidad y ocasión. Dentro de cada grupo
+										se ordenan por frecuencia de uso. En caso de empate, se muestra primero
+										el de menor complejidad estimada.
+									</p>
+								</div>
+							)}
+						</div>
+					</div>
+				</div>
+
+				<div className="occasion-grid">
+					{tiposEvento.map((tipo) => (
+						<button
+							className={`occasion-option ${tipo.color}${tipoSeleccionado === tipo.id ? ' is-selected' : ''}`}
+							key={tipo.id}
+							type="button"
+							aria-pressed={tipoSeleccionado === tipo.id}
+							onClick={() => setTipoSeleccionado(tipo.id)}
+						>
+							<span className="occasion-icon" aria-hidden="true">{tipo.icono}</span>
+							<span className="occasion-copy">
+								<strong>{tipo.nombre}</strong>
+								<span>{tipo.descripcion}</span>
+							</span>
+							<span className="occasion-check" aria-hidden="true">✓</span>
+						</button>
+					))}
+				</div>
+
+				<div className="chooser-footer">
+					<p>Siempre hay algo que vale la pena celebrar.</p>
+					<button className="continue-button" type="button" onClick={continuar} disabled={!tipoSeleccionado}>
+						Continuar <span aria-hidden="true">→</span>
+					</button>
+				</div>
+			</section>
+			<footer className="event-footer"><span>EventPro</span><span>Los buenos momentos empiezan con un plan.</span></footer>
+		</main>
+	);
 }

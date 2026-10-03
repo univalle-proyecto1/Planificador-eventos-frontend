@@ -1,0 +1,250 @@
+/* DetalleEvento.css */
+
+.det-container {
+  width: min(100% - 40px, 720px);
+  margin: 0 auto;
+  padding: 40px 0 60px;
+}
+
+.det-cargando,
+.det-error {
+  margin-top: 30px;
+  font-size: 14px;
+  color: #718077;
+}
+.det-error { color: #b34438; }
+
+/* ── Cabecera ── */
+.det-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 22px 0 16px;
+}
+
+.det-titulo {
+  margin: 6px 0 4px;
+  color: #20392d;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.det-meta {
+  margin: 0;
+  color: #879188;
+  font-size: 13px;
+}
+
+.det-btn-nueva {
+  flex-shrink: 0;
+  margin-top: 10px;
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+/* ── Barra de progreso ── */
+.prog-barra-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.det-barra { margin-bottom: 24px; }
+
+.prog-barra {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #e4ebe0;
+  overflow: hidden;
+}
+
+.prog-barra-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #246b4d;
+  transition: width 500ms ease;
+}
+
+.prog-barra-pct {
+  color: #879188;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Formulario nueva tarea ── */
+.det-form {
+  padding: 22px 24px;
+  margin-bottom: 28px;
+  border: 1px solid #d8e6d3;
+  border-radius: 10px;
+  background: #f3f9f1;
+  animation: fade-in 180ms ease;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.det-form-titulo {
+  margin: 0 0 16px;
+  color: #263a31;
+  font-family: Georgia, serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+
+.det-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.det-form-grid > label:first-child {
+  grid-column: 1 / -1;
+}
+
+.det-label {
+  display: grid;
+  gap: 6px;
+  color: #34493c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.det-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #cfdeca;
+  border-radius: 6px;
+  color: #263a31;
+  background: #fff;
+  font: 14px 'Trebuchet MS', 'Segoe UI', sans-serif;
+}
+
+.det-input:focus {
+  border-color: #347554;
+  outline: 2px solid rgba(52, 117, 84, 0.15);
+}
+
+select.det-input { cursor: pointer; }
+
+.det-form-error {
+  margin: 0 0 10px;
+  color: #b34438;
+  font-size: 13px;
+}
+
+.det-btn-guardar {
+  width: 100%;
+  justify-content: center;
+  min-height: 44px;
+}
+
+/* ── Sección tareas ── */
+.det-tareas-section { margin-top: 8px; }
+
+.det-tareas-titulo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 14px;
+  color: #263a31;
+  font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.det-sin-tareas {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 40px 24px;
+  border: 1px dashed #ccddc7;
+  border-radius: 10px;
+  color: #879188;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ── Fila de tarea ── */
+.det-tareas-lista { display: grid; gap: 1px; }
+
+.det-tarea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border-radius: 8px;
+  background: #fffefa;
+  border: 1px solid #e8ede5;
+  transition: box-shadow 140ms ease;
+}
+.det-tarea:hover { box-shadow: 0 3px 10px rgba(38,58,49,.07); }
+
+.det-tarea-info { flex: 1; min-width: 0; }
+
+.det-tarea-titulo {
+  display: block;
+  color: #1e3329;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.det-tarea-meta {
+  display: block;
+  margin-top: 2px;
+  color: #9aa49b;
+  font-size: 11px;
+}
+
+.det-tarea-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.det-btn-eliminar {
+  color: #b34438 !important;
+  border-color: #f0d4d1 !important;
+  background: #fdf4f3 !important;
+  padding: 5px 9px !important;
+}
+.det-btn-eliminar:hover {
+  background: #f8e6e4 !important;
+  border-color: #dba09a !important;
+}
+
+/* ── Badges compartidos ── */
+.prog-badge { display: inline-block; padding: 3px 9px; border-radius: 4px; font-size: 10px; font-weight: 800; letter-spacing: .5px; white-space: nowrap; }
+.badge-proxima  { color: #4a5e50; background: #e3ece0; }
+.badge-hoy      { color: #fff;    background: #1a5ca8; }
+.badge-hecho    { color: #387454; background: #d8edd5; }
+.badge-pospuesto{ color: #7a5c1e; background: #fdf0d5; }
+
+/* ── Botones compartidos ── */
+.prog-action { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px solid #d5e0d1; border-radius: 20px; color: #387454; background: #eef5eb; cursor: pointer; font: 700 11px 'Trebuchet MS','Segoe UI',sans-serif; text-decoration: none; transition: background 130ms, border-color 130ms; }
+.prog-action:hover { background: #e0eeda; border-color: #a4c49c; }
+.prog-action-primary { color: #fff; background: #246b4d; border-color: #246b4d; }
+.prog-action-primary:hover { background: #19543c; border-color: #19543c; }
+
+/* ── Responsive ── */
+@media (max-width: 540px) {
+  .det-form-grid { grid-template-columns: 1fr; }
+  .det-form-grid > label:first-child { grid-column: 1; }
+  .det-header { flex-direction: column; }
+  .det-tarea { flex-wrap: wrap; }
+  .det-titulo { font-size: 28px; }
+}
