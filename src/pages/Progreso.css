@@ -103,17 +103,15 @@
   align-items: center;
 }
 
-.prog-action-delete {
-  background: transparent;
-  border: none;
-  color: #9aa49b;
-  font-size: 16px;
+.prog-action.prog-action-delete {
+  color: #b34438;
+  border-color: #f0d4d1;
+  background: #fdf4f3;
   cursor: pointer;
-  padding: 4px;
-  transition: color 150ms ease;
 }
-.prog-action-delete:hover {
-  color: #d84b4b;
+.prog-action.prog-action-delete:hover {
+  background: #f8e6e4;
+  border-color: #dba09a;
 }
 
 .prog-evento-badges {
@@ -229,8 +227,13 @@
 .prog-action {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 34px;
+  min-width: 118px;
+  white-space: nowrap;
   gap: 5px;
-  padding: 5px 12px;
+  padding: 0 14px;
   border: 1px solid #d5e0d1;
   border-radius: 20px;
   color: #387454;
@@ -248,6 +251,15 @@
   border-color: #246b4d;
 }
 .prog-action-primary:hover { background: #19543c; border-color: #19543c; }
+
+/* Botones de solo ícono: cuadrados, mismo alto que los de texto */
+.prog-action.prog-action-icon,
+.prog-action.prog-action-delete {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  font-size: 14px;
+}
 
 /* ── Estados ── */
 .prog-estado {

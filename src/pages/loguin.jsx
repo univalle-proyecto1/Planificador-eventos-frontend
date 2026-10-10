@@ -68,7 +68,7 @@ export default function Loguin() {
 			}
 
 			setStatus('success');
-			navigate('/hoy', { replace: true });
+			navigate('/crear-evento', { replace: true });
 		} catch (error) {
 			setStatus('error');
 			setServerError(
@@ -97,7 +97,7 @@ export default function Loguin() {
 							<span className="success-icon" aria-hidden="true">✓</span>
 							<h2>Sesión iniciada</h2>
 							<p>Tu acceso fue confirmado. Ya puedes volver a tu espacio de trabajo.</p>
-							<button className="login-submit" type="button" onClick={() => navigate('/hoy')}>
+							<button className="login-submit" type="button" onClick={() => navigate('/crear-evento')} title="Abrir la pantalla principal para organizar eventos">
 								Ir a mi tablero
 							</button>
 						</div>
@@ -139,7 +139,7 @@ export default function Loguin() {
 
 							{serverError && <p className="form-error" role="alert">{serverError}</p>}
 
-							<button className="login-submit" type="submit" disabled={status === 'loading'}>
+							<button className="login-submit" type="submit" disabled={status === 'loading'} title="Comprobar tus datos e iniciar sesión">
 								{status === 'loading' ? (
 									<><span className="loading-spinner" aria-hidden="true" />Ingresando...</>
 								) : 'Iniciar sesión'}

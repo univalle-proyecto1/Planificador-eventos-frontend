@@ -28,13 +28,15 @@ function TareaFila({ tarea, onAccion }) {
 		<div className="prog-tarea">
 			<div className="prog-tarea-info">
 				<span className="prog-tarea-titulo">{tarea.titulo}</span>
-				<span className="prog-tarea-meta">{tarea.fecha_asignada} · {tarea.horas_estimadas}h</span>
+				<span className="prog-tarea-meta">
+					{tarea.fecha_asignada}{tarea.hora_asignada && ` · ${tarea.hora_asignada.slice(0, 5)}`} · {tarea.horas_estimadas}h
+				</span>
 			</div>
 			<span className={`prog-badge ${cls}`}>{label}</span>
 			{tipo !== 'hecho' && (
 				<div className="prog-tarea-actions">
-					<button className="prog-action prog-action-primary" onClick={() => onAccion(tarea.id, 'HECHO')}>✓</button>
-					<button className="prog-action" onClick={() => onAccion(tarea.id, 'POSPUESTO')}>↷</button>
+					<button className="prog-action prog-action-icon prog-action-primary" onClick={() => onAccion(tarea.id, 'HECHO')} title={`Marcar «${tarea.titulo}» como completada`}>✓</button>
+					<button className="prog-action prog-action-icon" onClick={() => onAccion(tarea.id, 'POSPUESTO')} title={`Posponer «${tarea.titulo}»`}>↷</button>
 				</div>
 			)}
 		</div>
@@ -58,12 +60,13 @@ function EventoCard({ evento, onAccion, onEliminar }) {
             {evento.nombre} →
           </Link>
           <p className="prog-evento-meta">
+						{evento.fecha_evento && `${evento.fecha_evento}${evento.hora_evento ? ` · ${evento.hora_evento.slice(0, 5)}` : ''} · `}
             {tareas.length} tarea{tareas.length !== 1 ? 's' : ''}
             {tareas.length > 0 && ` · ${porcentaje}% completado`}
           </p>
         </div>
         <div className="prog-evento-actions">
-          <button className="prog-action prog-action-delete" onClick={() => onEliminar(evento.id)} title="Eliminar evento">
+		  <button className="prog-action prog-action-delete" onClick={() => onEliminar(evento.id)} title={`Eliminar «${evento.nombre}» y todas sus subtareas`}>
             ✕
           </button>
         </div>
@@ -166,14 +169,14 @@ export default function Progreso() {
 	return (
 		<main className="prog-page">
 			<header className="event-topbar">
-				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+				<Link className="event-brand" to="/crear-evento" aria-label="EventPro, inicio">
 					<span className="event-brand-mark" aria-hidden="true">E</span>
 					<span>EventPro</span>
 				</Link>
 				<nav className="event-nav" aria-label="Navegación principal">
-					<Link to="/hoy">Crear evento</Link>
-					<span className="event-nav-current">Mis eventos</span>
-					<Link to="/hoy-eventos">HOY</Link>
+					<Link to="/crear-evento">Crear evento</Link>
+					<span className="event-nav-current" aria-current="page">Mis eventos</span>
+					<Link to="/hoy">Hoy</Link>
 				</nav>
 				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
 			</header>
@@ -185,7 +188,7 @@ export default function Progreso() {
 						<h1 className="prog-titulo">Progreso</h1>
 						<p className="prog-subtitulo">Todos tus eventos y su estado actual.</p>
 					</div>
-					<button className="prog-refresh" onClick={cargar} title="Actualizar">↻</button>
+					<button className="prog-refresh" onClick={cargar} title="Volver a cargar tus eventos">↻</button>
 				</div>
 
 				{cargando && (
@@ -198,7 +201,7 @@ export default function Progreso() {
 				{error && (
 					<div className="prog-estado prog-estado-error">
 						<p>{error}</p>
-						<button className="prog-action prog-action-primary" onClick={cargar}>Reintentar</button>
+						<button className="prog-action prog-action-primary" onClick={cargar} title="Intentar cargar los eventos otra vez">Reintentar</button>
 					</div>
 				)}
 
@@ -206,7 +209,7 @@ export default function Progreso() {
 					<div className="prog-estado">
 						<span className="prog-vacio-icon">✦</span>
 						<p>Aún no tienes eventos creados.</p>
-						<Link className="prog-action prog-action-primary" to="/hoy">Crear mi primer evento</Link>
+						<Link className="prog-action prog-action-primary" to="/crear-evento" title="Ir a la pantalla para crear un evento">Crear mi primer evento</Link>
 					</div>
 				)}
 

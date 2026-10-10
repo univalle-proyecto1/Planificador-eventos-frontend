@@ -107,7 +107,7 @@ export default function Registro() {
 							<span className="success-icon" aria-hidden="true">✓</span>
 							<h2>Cuenta creada</h2>
 							<p>Tu registro fue confirmado. Ya puedes iniciar sesión.</p>
-							<button className="login-submit" type="button" onClick={() => navigate('/login')}>
+							<button className="login-submit" type="button" onClick={() => navigate('/login')} title="Ir al inicio de sesión con tu cuenta nueva">
 								Ir a iniciar sesión
 							</button>
 						</div>
@@ -139,7 +139,7 @@ export default function Registro() {
 
 							{serverError && <p className="form-error" role="alert">{serverError}</p>}
 
-							<button className="login-submit" type="submit" disabled={status === 'loading'}>
+							<button className="login-submit" type="submit" disabled={status === 'loading'} title="Validar los datos y crear tu cuenta">
 								{status === 'loading' ? <><span className="loading-spinner" aria-hidden="true" />Creando cuenta...</> : 'Crear cuenta'}
 							</button>
 							<p className="auth-switch">

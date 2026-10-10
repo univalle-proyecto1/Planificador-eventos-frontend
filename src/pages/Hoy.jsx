@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import './Hoy.css';
 
+const API = 'http://127.0.0.1:8000';
+
 const tiposEvento = [
 	{ id: 'cumpleanos', nombre: 'Cumpleaños', descripcion: 'Un día para celebrar a lo grande.', icono: '🎂', color: 'coral' },
 	{ id: 'fiesta', nombre: 'Fiesta', descripcion: 'Una buena razón para reunirnos.', icono: '🎉', color: 'amarillo' },
@@ -17,7 +19,31 @@ export default function Hoy() {
 	const navigate = useNavigate();
 	const [tipoSeleccionado, setTipoSeleccionado] = useState('');
 	const [tooltipAbierto, setTooltipAbierto] = useState(false);
+	const [eventosRecientes, setEventosRecientes] = useState([]);
+	const [errorEventos, setErrorEventos] = useState('');
 	const tooltipRef = useRef(null);
+
+	useEffect(() => {
+		let activo = true;
+		fetch(`${API}/api/eventos/`, { credentials: 'include' })
+			.then(response => {
+				if (!response.ok) throw new Error('No se pudieron cargar tus eventos.');
+				return response.json();
+			})
+			.then(data => {
+				if (activo) {
+					setEventosRecientes([...data].sort((a, b) => {
+						const fechaA = new Date(a.fecha_creacion || 0).getTime();
+						const fechaB = new Date(b.fecha_creacion || 0).getTime();
+						return fechaB - fechaA || b.id - a.id;
+					}).slice(0, 5));
+				}
+			})
+			.catch(error => {
+				if (activo) setErrorEventos(error.message);
+			});
+		return () => { activo = false; };
+	}, []);
 
 	useEffect(() => {
 		if (!tooltipAbierto) return;
@@ -39,13 +65,14 @@ export default function Hoy() {
 	return (
 		<main className="event-home">
 			<header className="event-topbar">
-				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+				<Link className="event-brand" to="/crear-evento" aria-label="EventPro, inicio">
 					<span className="event-brand-mark" aria-hidden="true">E</span>
 					<span>EventPro</span>
 				</Link>
 				<nav className="event-nav" aria-label="Navegación principal">
-					<span className="event-nav-current">Crear evento</span>
+					<span className="event-nav-current" aria-current="page">Crear evento</span>
 					<Link to="/progreso">Mis eventos</Link>
+					<Link to="/hoy">Hoy</Link>
 				</nav>
 				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
 			</header>
@@ -74,6 +101,7 @@ export default function Hoy() {
 						<div className="orden-tooltip-wrap" ref={tooltipRef}>
 							<button
 								className="orden-btn"
+								title="Explica cómo se ordenan las ocasiones"
 								type="button"
 								aria-expanded={tooltipAbierto}
 								onClick={() => setTooltipAbierto((v) => !v)}
@@ -99,6 +127,7 @@ export default function Hoy() {
 					{tiposEvento.map((tipo) => (
 						<button
 							className={`occasion-option ${tipo.color}${tipoSeleccionado === tipo.id ? ' is-selected' : ''}`}
+							title={`Seleccionar ${tipo.nombre}`}
 							key={tipo.id}
 							type="button"
 							aria-pressed={tipoSeleccionado === tipo.id}
@@ -116,10 +145,41 @@ export default function Hoy() {
 
 				<div className="chooser-footer">
 					<p>Siempre hay algo que vale la pena celebrar.</p>
-					<button className="continue-button" type="button" onClick={continuar} disabled={!tipoSeleccionado}>
+					<button className="continue-button" type="button" onClick={continuar} disabled={!tipoSeleccionado} title="Continuar para indicar el nombre y los datos del evento">
 						Continuar <span aria-hidden="true">→</span>
 					</button>
 				</div>
+			</section>
+
+			<section className="recent-events" aria-labelledby="recent-events-title">
+				<div className="recent-events-heading">
+					<div>
+						<p className="section-kicker">CONTINUAR ORGANIZANDO</p>
+						<h2 id="recent-events-title">Eventos recientes</h2>
+					</div>
+					<Link className="recent-events-all" to="/progreso" title="Abrir la lista completa de eventos">Ver todos</Link>
+				</div>
+				{errorEventos && <p className="recent-events-empty" role="status">{errorEventos}</p>}
+				{!errorEventos && eventosRecientes.length === 0 && (
+					<p className="recent-events-empty">Todavía no has creado eventos.</p>
+				)}
+				{eventosRecientes.length > 0 && (
+					<div className="recent-events-list">
+						{eventosRecientes.map(evento => (
+							<article className="recent-event-row" key={evento.id}>
+								<div className="recent-event-info">
+									<Link to={`/evento/${evento.id}`} title={`Abrir el detalle de ${evento.nombre}`}>{evento.nombre}</Link>
+									<span>
+										{evento.fecha_evento || 'Fecha pendiente'}
+										{evento.hora_evento && ` · ${evento.hora_evento.slice(0, 5)}`}
+										{` · ${(evento.tareas || []).length} subtareas`}
+									</span>
+								</div>
+								<Link className="recent-event-action" to={`/evento/${evento.id}`} title={`Abrir ${evento.nombre} para agregar una subtarea`}>Crear subtarea <span aria-hidden="true">→</span></Link>
+							</article>
+						))}
+					</div>
+				)}
 			</section>
 			<footer className="event-footer"><span>EventPro</span><span>Los buenos momentos empiezan con un plan.</span></footer>
 		</main>

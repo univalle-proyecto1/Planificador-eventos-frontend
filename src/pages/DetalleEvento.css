@@ -40,9 +40,14 @@
 
 .det-btn-nueva {
   flex-shrink: 0;
-  margin-top: 10px;
-  padding: 8px 16px;
-  font-size: 12px;
+}
+
+.det-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 /* ── Barra de progreso ── */
@@ -83,6 +88,11 @@
   border-radius: 10px;
   background: #f3f9f1;
   animation: fade-in 180ms ease;
+}
+
+.det-tarea-form {
+  margin: 0 0 10px;
+  background: #f8faf6;
 }
 
 @keyframes fade-in {
@@ -220,7 +230,6 @@ select.det-input { cursor: pointer; }
   color: #b34438 !important;
   border-color: #f0d4d1 !important;
   background: #fdf4f3 !important;
-  padding: 5px 9px !important;
 }
 .det-btn-eliminar:hover {
   background: #f8e6e4 !important;
@@ -235,7 +244,8 @@ select.det-input { cursor: pointer; }
 .badge-pospuesto{ color: #7a5c1e; background: #fdf0d5; }
 
 /* ── Botones compartidos ── */
-.prog-action { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border: 1px solid #d5e0d1; border-radius: 20px; color: #387454; background: #eef5eb; cursor: pointer; font: 700 11px 'Trebuchet MS','Segoe UI',sans-serif; text-decoration: none; transition: background 130ms, border-color 130ms; }
+.prog-action { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; height: 34px; min-width: 118px; white-space: nowrap; gap: 5px; padding: 0 14px; border: 1px solid #d5e0d1; border-radius: 20px; color: #387454; background: #eef5eb; cursor: pointer; font: 700 11px 'Trebuchet MS','Segoe UI',sans-serif; text-decoration: none; transition: background 130ms, border-color 130ms; }
+.prog-action.prog-action-icon { width: 34px; min-width: 34px; padding: 0; font-size: 14px; }
 .prog-action:hover { background: #e0eeda; border-color: #a4c49c; }
 .prog-action-primary { color: #fff; background: #246b4d; border-color: #246b4d; }
 .prog-action-primary:hover { background: #19543c; border-color: #19543c; }
@@ -245,6 +255,7 @@ select.det-input { cursor: pointer; }
   .det-form-grid { grid-template-columns: 1fr; }
   .det-form-grid > label:first-child { grid-column: 1; }
   .det-header { flex-direction: column; }
+  .det-header-actions { justify-content: flex-start; }
   .det-tarea { flex-wrap: wrap; }
   .det-titulo { font-size: 28px; }
 }

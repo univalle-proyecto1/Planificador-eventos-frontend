@@ -17,10 +17,13 @@ export default function CrearEvento() {
 	const [searchParams] = useSearchParams();
 	const tipo = tiposEvento[searchParams.get('tipo')] || 'Evento';
 	const [nombre, setNombre] = useState(tipo === 'Otra ocasión' ? '' : tipo);
+	const [fechaEvento, setFechaEvento] = useState('');
+	const [horaEvento, setHoraEvento] = useState('');
 	const [horas, setHoras] = useState('6');
 	const [error, setError] = useState('');
 	const [guardando, setGuardando] = useState(false);
 	const [eventoCreado, setEventoCreado] = useState('');
+	const [eventoCreadoId, setEventoCreadoId] = useState(null);
 
 	async function handleSubmit(event) {
 		event.preventDefault();
@@ -41,7 +44,12 @@ export default function CrearEvento() {
 					'Content-Type': 'application/json',
 					'X-CSRFToken': csrfResult.csrfToken,
 				},
-				body: JSON.stringify({ nombre: nombre.trim(), limite_horas_diarias: Number(horas) }),
+				body: JSON.stringify({
+					nombre: nombre.trim(),
+					fecha_evento: fechaEvento || null,
+					hora_evento: horaEvento || null,
+					limite_horas_diarias: Number(horas),
+				}),
 			});
 			const result = await response.json().catch(() => ({}));
 
@@ -50,6 +58,7 @@ export default function CrearEvento() {
 			}
 
 			setEventoCreado(result.nombre || nombre.trim());
+			setEventoCreadoId(result.id);
 		} catch (submitError) {
 			setError(submitError instanceof TypeError
 				? 'No se pudo conectar con el servidor. Comprueba que el backend esté iniciado.'
@@ -62,26 +71,36 @@ export default function CrearEvento() {
 	return (
 		<main className="create-event-page">
 			<header className="event-topbar">
-				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+				<Link className="event-brand" to="/crear-evento" aria-label="EventPro, inicio">
 					<span className="event-brand-mark" aria-hidden="true">E</span>
 					<span>EventPro</span>
 				</Link>
 				<nav className="event-nav" aria-label="Navegación principal">
-					<Link to="/hoy">Crear evento</Link>
+					<span className="event-nav-current" aria-current="page">Crear evento</span>
 					<Link to="/progreso">Mis eventos</Link>
+					<Link to="/hoy">Hoy</Link>
 				</nav>
 				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
 			</header>
 
 			<section className="create-event-main">
-				<Link className="create-back" to="/hoy">← Volver a las ocasiones</Link>
+				<Link className="create-back" to="/crear-evento">← Volver a las ocasiones</Link>
 				{eventoCreado ? (
 					<div className="create-success-panel" role="status" aria-live="polite">
 						<span className="create-success-icon" aria-hidden="true">✓</span>
 						<p className="section-kicker">EVENTO CREADO</p>
 						<h1>{eventoCreado}</h1>
 						<p>Ya está en tu lista. Puedes seguir añadiendo los detalles de la celebración.</p>
-						<Link className="continue-button" to="/progreso">Ver mis eventos <span aria-hidden="true">→</span></Link>
+						<div className="create-success-actions">
+							{eventoCreadoId && (
+								<Link className="continue-button" to={`/evento/${eventoCreadoId}`} title="Abrir el evento y agregar subtareas">
+									Crear subtareas <span aria-hidden="true">→</span>
+								</Link>
+							)}
+							<Link className="continue-button create-success-secondary" to="/progreso" title="Ver todos tus eventos">
+								Ver mis eventos <span aria-hidden="true">→</span>
+							</Link>
+						</div>
 					</div>
 				) : (
 					<div className="create-form-panel">
@@ -103,6 +122,26 @@ export default function CrearEvento() {
 									value={nombre}
 								/>
 							</label>
+							<label htmlFor="event-date">
+								Fecha del evento
+								<input
+									id="event-date"
+									name="fecha_evento"
+									onChange={(event) => setFechaEvento(event.target.value)}
+									type="date"
+									value={fechaEvento}
+								/>
+							</label>
+							<label htmlFor="event-time">
+								Hora del evento
+								<input
+									id="event-time"
+									name="hora_evento"
+									onChange={(event) => setHoraEvento(event.target.value)}
+									type="time"
+									value={horaEvento}
+								/>
+							</label>
 							<label htmlFor="event-hours">
 								Horas disponibles al día
 								<input
@@ -116,7 +155,7 @@ export default function CrearEvento() {
 								/>
 							</label>
 							{error && <p className="create-error" role="alert">{error}</p>}
-							<button className="continue-button" type="submit" disabled={guardando || !nombre.trim()}>
+							<button className="continue-button" type="submit" disabled={guardando || !nombre.trim()} title="Guardar y crear el evento">
 								{guardando ? 'Guardando…' : 'Crear evento'} <span aria-hidden="true">→</span>
 							</button>
 						</form>
