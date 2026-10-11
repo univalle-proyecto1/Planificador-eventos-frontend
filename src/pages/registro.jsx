@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { parseApiError } from '../utils/api';
 import './loguin.css';
 
 const REGISTER_ENDPOINT = import.meta.env.VITE_REGISTER_ENDPOINT || '/api/auth/register/';
@@ -76,7 +75,7 @@ export default function Registro() {
 				if (result.errors && typeof result.errors === 'object') {
 					setErrors((current) => ({ ...current, ...result.errors }));
 				}
-				throw new Error(parseApiError(result, 'No pudimos crear tu cuenta. Revisa tus datos e inténtalo de nuevo.'));
+				throw new Error(result.message || result.error || 'No pudimos crear tu cuenta. Revisa tus datos e inténtalo de nuevo.');
 			}
 
 			setStatus('success');
@@ -89,7 +88,6 @@ export default function Registro() {
 			);
 		}
 	}
-
 
 	return (
 		<main className="login-page">

@@ -5,6 +5,7 @@ import DetalleEvento from './pages/DetalleEvento';
 import Progreso from './pages/Progreso';
 import Loguin from './pages/loguin';
 import Registro from './pages/registro';
+import HoyEventos from './pages/HoyEventos';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/crear" element={<CrearEvento />} />
         <Route path="/evento/:id" element={<DetalleEvento />} />
         <Route path="/progreso" element={<Progreso />} />
+        <Route path="/hoy-eventos" element={<HoyEventos />} />
       </Routes>
     </BrowserRouter>
   );

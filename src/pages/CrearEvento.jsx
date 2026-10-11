@@ -1,7 +1,5 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import Header from '../components/Header';
-import { parseApiError } from '../utils/api';
 import './Hoy.css';
 
 const tiposEvento = {
@@ -30,14 +28,15 @@ export default function CrearEvento() {
 		setGuardando(true);
 
 		try {
-			const csrfResponse = await fetch('/api/auth/csrf/');
+			const csrfResponse = await fetch('http://127.0.0.1:8000/api/auth/csrf/', { credentials: 'include' });
 			const csrfResult = await csrfResponse.json();
 			if (!csrfResponse.ok || !csrfResult.csrfToken) {
 				throw new Error('No se pudo validar la solicitud. Actualiza la página e inténtalo de nuevo.');
 			}
 
-			const response = await fetch('/api/eventos/', {
+			const response = await fetch('http://127.0.0.1:8000/api/eventos/', {
 				method: 'POST',
+				credentials: 'include',
 				headers: {
 					'Content-Type': 'application/json',
 					'X-CSRFToken': csrfResult.csrfToken,
@@ -47,7 +46,7 @@ export default function CrearEvento() {
 			const result = await response.json().catch(() => ({}));
 
 			if (!response.ok) {
-				throw new Error(parseApiError(result, 'No se pudo guardar el evento. Inténtalo de nuevo.'));
+				throw new Error(result.detail || 'No se pudo guardar el evento. Inténtalo de nuevo.');
 			}
 
 			setEventoCreado(result.nombre || nombre.trim());
@@ -62,8 +61,17 @@ export default function CrearEvento() {
 
 	return (
 		<main className="create-event-page">
-			<Header currentPage="crear" />
-
+			<header className="event-topbar">
+				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+					<span className="event-brand-mark" aria-hidden="true">E</span>
+					<span>EventPro</span>
+				</Link>
+				<nav className="event-nav" aria-label="Navegación principal">
+					<Link to="/hoy">Crear evento</Link>
+					<Link to="/progreso">Mis eventos</Link>
+				</nav>
+				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
+			</header>
 
 			<section className="create-event-main">
 				<Link className="create-back" to="/hoy">← Volver a las ocasiones</Link>

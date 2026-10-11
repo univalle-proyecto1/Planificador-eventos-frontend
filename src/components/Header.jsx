@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 
 export default function Header({ currentPage }) {
 	const navigate = useNavigate();
@@ -11,7 +12,7 @@ export default function Header({ currentPage }) {
 
 	async function checkUserSession() {
 		try {
-			const res = await fetch('/api/auth/me/');
+			const res = await apiFetch('/api/auth/me/');
 			if (res.ok) {
 				const data = await res.json();
 				if (data.authenticated) {
@@ -27,7 +28,7 @@ export default function Header({ currentPage }) {
 
 	async function handleLogout() {
 		try {
-			await fetch('/api/auth/logout/', { method: 'POST' });
+			await apiFetch('/api/auth/logout/', { method: 'POST' });
 		} catch (err) {
 			console.error('Error al cerrar sesión:', err);
 		} finally {

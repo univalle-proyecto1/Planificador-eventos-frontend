@@ -33,7 +33,7 @@ export function parseApiError(data, defaultMsg = 'Ocurrió un error inesperado.'
  */
 export async function getCsrfToken() {
 	try {
-		const response = await fetch('/api/auth/csrf/');
+		const response = await fetch('/api/auth/csrf/', { credentials: 'include' });
 		if (response.ok) {
 			const data = await response.json();
 			return data.csrfToken || '';
@@ -42,4 +42,27 @@ export async function getCsrfToken() {
 		console.error('Error al obtener CSRF token:', err);
 	}
 	return '';
+}
+
+/**
+ * Centralized fetch helper that includes credentials and automatic CSRF header
+ */
+export async function apiFetch(url, options = {}) {
+	const method = (options.method || 'GET').toUpperCase();
+	const headers = { ...options.headers };
+
+	if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+		if (!headers['X-CSRFToken']) {
+			const token = await getCsrfToken();
+			if (token) {
+				headers['X-CSRFToken'] = token;
+			}
+		}
+	}
+
+	return fetch(url, {
+		...options,
+		credentials: 'include',
+		headers,
+	});
 }

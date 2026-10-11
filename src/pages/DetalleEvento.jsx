@@ -1,297 +1,456 @@
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import { parseApiError } from '../utils/api';
+import { useState, useEffect, useCallback } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import './Hoy.css';
+import './DetalleEvento.css';
+
+const API = 'http://127.0.0.1:8000';
+
+const ESTADO_LABEL = {
+	PENDIENTE:   { label: 'PENDIENTE',   cls: 'badge-proxima' },
+	EN_PROGRESO: { label: 'EN PROGRESO', cls: 'badge-hoy' },
+	HECHO:       { label: 'HECHO',       cls: 'badge-hecho' },
+	POSPUESTO:   { label: 'POSPUESTO',   cls: 'badge-pospuesto' },
+};
+
+function TareaFila({ tarea, onEstado, onEliminar, onAbrirReprogramar }) {
+	const { label, cls } = ESTADO_LABEL[tarea.estado] || ESTADO_LABEL.PENDIENTE;
+	return (
+		<div className="det-tarea">
+			<div className="det-tarea-info">
+				<span className="det-tarea-titulo">{tarea.titulo}</span>
+				<span className="det-tarea-meta">
+					📅 {tarea.fecha_asignada} · ⏱ {tarea.horas_estimadas}h · {tarea.prioridad}
+				</span>
+			</div>
+			<span className={`prog-badge ${cls}`}>{label}</span>
+			<div className="det-tarea-actions">
+				{tarea.estado !== 'HECHO' && (
+					<button
+						className="prog-action prog-action-primary"
+						onClick={() => onEstado(tarea.id, 'HECHO')}
+						title="Marcar como completada"
+					>
+						✓ Hecho
+					</button>
+				)}
+				{tarea.estado === 'PENDIENTE' && (
+					<button
+						className="prog-action"
+						onClick={() => onEstado(tarea.id, 'EN_PROGRESO')}
+						title="Marcar en progreso"
+					>
+						↻ En progreso
+					</button>
+				)}
+				{tarea.estado === 'EN_PROGRESO' && (
+					<button
+						className="prog-action"
+						onClick={() => onEstado(tarea.id, 'PENDIENTE')}
+						title="Pausar o regresar a pendiente"
+					>
+						⏳ Pausar
+					</button>
+				)}
+				{tarea.estado === 'HECHO' && (
+					<button
+						className="prog-action"
+						onClick={() => onEstado(tarea.id, 'PENDIENTE')}
+						title="Reabrir tarea"
+					>
+						↺ Reabrir
+					</button>
+				)}
+				<button
+					className="prog-action prog-action-reprog-evento"
+					onClick={() => onAbrirReprogramar(tarea)}
+					title="Reprogramar fecha de esta tarea"
+				>
+					📅 Reprogramar
+				</button>
+				<button
+					className="prog-action det-btn-eliminar"
+					onClick={() => onEliminar(tarea.id)}
+					title="Eliminar tarea"
+				>
+					✕
+				</button>
+			</div>
+		</div>
+	);
+}
+
+const FORM_INICIAL = { titulo: '', fecha_asignada: '', horas_estimadas: '', prioridad: 'NORMAL' };
 
 export default function DetalleEvento() {
 	const { id } = useParams();
-	const navigate = useNavigate();
-
 	const [evento, setEvento] = useState(null);
 	const [cargando, setCargando] = useState(true);
 	const [error, setError] = useState('');
+	const [form, setForm] = useState(FORM_INICIAL);
+	const [formError, setFormError] = useState('');
+	const [guardando, setGuardando] = useState(false);
+	const [abrirForm, setAbrirForm] = useState(false);
 
-	// Formulario para nueva tarea
-	const [titulo, setTitulo] = useState('');
-	const [fechaAsignada, setFechaAsignada] = useState(new Date().toISOString().split('T')[0]);
-	const [horasEstimadas, setHorasEstimadas] = useState('2');
-	const [prioridad, setPrioridad] = useState('NORMAL');
-	const [guardandoTarea, setGuardandoTarea] = useState(false);
-	const [errorTarea, setErrorTarea] = useState('');
+	// Estado para modal reprogramar tarea
+	const [tareaAReprogramar, setTareaAReprogramar] = useState(null);
+	const [reprogFecha, setReprogFecha] = useState('');
+	const [reprogHoras, setReprogHoras] = useState('');
+	const [reprogReactivar, setReprogReactivar] = useState(true);
+	const [reprogError, setReprogError] = useState('');
+	const [guardandoReprog, setGuardandoReprog] = useState(false);
 
-	// Estado para edición de tareas
-	const [editandoTareaId, setEditandoTareaId] = useState(null);
-	const [editTitulo, setEditTitulo] = useState('');
-	const [editFecha, setEditFecha] = useState('');
-	const [editHoras, setEditHoras] = useState('2');
-	const [editPrioridad, setEditPrioridad] = useState('NORMAL');
-	const [editEstado, setEditEstado] = useState('PENDIENTE');
-	const [guardandoEditTarea, setGuardandoEditTarea] = useState(false);
+	// Estado para modal reprogramar evento
+	const [abrirReprogEvento, setAbrirReprogEvento] = useState(false);
+	const [eventoFecha, setEventoFecha] = useState('');
+	const [diasDesplazamiento, setDiasDesplazamiento] = useState('');
+	const [eventoReprogError, setEventoReprogError] = useState('');
+	const [guardandoEventoReprog, setGuardandoEventoReprog] = useState(false);
 
-	useEffect(() => {
-		cargarEvento();
-	}, [id]);
-
-	async function cargarEvento() {
+	const cargar = useCallback(async () => {
 		setCargando(true);
 		setError('');
 		try {
-			const response = await fetch(`/api/eventos/${id}/`);
-			if (!response.ok) {
-				const resJson = await response.json().catch(() => ({}));
-				throw new Error(parseApiError(resJson, 'No se pudo cargar el evento especificado.'));
-			}
-			const data = await response.json();
+			const res = await fetch(`${API}/api/eventos/${id}/`, { credentials: 'include' });
+			if (!res.ok) throw new Error('No se encontró el evento.');
+			const data = await res.json();
 			setEvento(data);
-		} catch (err) {
-			setError(err.message || 'Error al obtener el evento.');
+			setEventoFecha(data.fecha_evento || '');
+		} catch (e) {
+			setError(e.message);
 		} finally {
 			setCargando(false);
 		}
+	}, [id]);
+
+	useEffect(() => { cargar(); }, [cargar]);
+
+	function handleChange(e) {
+		const { name, value } = e.target;
+		setForm(prev => ({ ...prev, [name]: value }));
+		setFormError('');
 	}
 
-	function calcularHorasFecha(fecha, ignorarTareaId = null) {
-		if (!evento || !evento.tareas) return 0;
-		return evento.tareas
-			.filter((t) => t.fecha_asignada === fecha && t.id !== ignorarTareaId)
-			.reduce((total, t) => total + Number(t.horas_estimadas), 0);
-	}
-
-	async function handleCrearTarea(e) {
+	async function handleAgregarTarea(e) {
 		e.preventDefault();
-		setErrorTarea('');
+		if (!form.titulo.trim()) return setFormError('Escribe un nombre para la tarea.');
+		if (!form.fecha_asignada)  return setFormError('Selecciona una fecha.');
+		if (!form.horas_estimadas || Number(form.horas_estimadas) <= 0)
+			return setFormError('Ingresa las horas estimadas.');
 
-		const horasNuevas = Number(horasEstimadas);
-		if (isNaN(horasNuevas) || horasNuevas <= 0) {
-			setErrorTarea('Ingresa una cantidad de horas estimadas válida.');
-			return;
-		}
-
-		const horasActuales = calcularHorasFecha(fechaAsignada);
-		const limite = Number(evento.limite_horas_diarias);
-
-		if (horasActuales + horasNuevas > limite) {
-			setErrorTarea(
-				`⚠️ Límite excedido: Para la fecha ${fechaAsignada} ya tienes ${horasActuales} hrs ocupadas. ` +
-				`Sumar ${horasNuevas} hrs superaría el límite de ${limite} hrs/día del evento.`
-			);
-			return;
-		}
-
-		setGuardandoTarea(true);
+		setGuardando(true);
+		setFormError('');
 		try {
-			const csrfResponse = await fetch('/api/auth/csrf/');
-			const csrfResult = await csrfResponse.json();
+			const csrfRes = await fetch(`${API}/api/auth/csrf/`, { credentials: 'include' });
+			const { csrfToken } = await csrfRes.json();
 
-			const response = await fetch('/api/tareas/', {
+			const res = await fetch(`${API}/api/tareas/`, {
 				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRFToken': csrfResult.csrfToken || '',
-				},
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
 				body: JSON.stringify({
 					evento: Number(id),
-					titulo: titulo.trim(),
-					fecha_asignada: fechaAsignada,
-					horas_estimadas: horasNuevas,
-					prioridad: prioridad,
-					estado: 'PENDIENTE',
+					titulo: form.titulo.trim(),
+					fecha_asignada: form.fecha_asignada,
+					horas_estimadas: Number(form.horas_estimadas),
+					prioridad: form.prioridad,
 				}),
 			});
-
-			const result = await response.json().catch(() => ({}));
-			if (!response.ok) {
-				throw new Error(parseApiError(result, 'No se pudo crear la tarea logística.'));
+			const result = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				const msg = Array.isArray(result?.non_field_errors)
+					? result.non_field_errors[0]
+					: result?.detail || JSON.stringify(result);
+				throw new Error(msg);
 			}
-
-			setTitulo('');
-			setHorasEstimadas('2');
-			await cargarEvento();
+			setForm(FORM_INICIAL);
+			setAbrirForm(false);
+			cargar();
 		} catch (err) {
-			setErrorTarea(err.message || 'Error al guardar la tarea.');
+			setFormError(err.message);
 		} finally {
-			setGuardandoTarea(false);
+			setGuardando(false);
 		}
 	}
 
-	function iniciarEdicionTarea(tarea) {
-		setEditandoTareaId(tarea.id);
-		setEditTitulo(tarea.titulo);
-		setEditFecha(tarea.fecha_asignada);
-		setEditHoras(String(tarea.horas_estimadas));
-		setEditPrioridad(tarea.prioridad);
-		setEditEstado(tarea.estado);
-	}
-
-	function cancelarEdicionTarea() {
-		setEditandoTareaId(null);
-	}
-
-	async function handleGuardarEditTarea(tareaId, e) {
-		e.preventDefault();
-		setErrorTarea('');
-		setGuardandoEditTarea(true);
-
+	async function handleEstado(tareaId, nuevoEstado) {
 		try {
-			const csrfResponse = await fetch('/api/auth/csrf/');
-			const csrfResult = await csrfResponse.json();
-
-			const response = await fetch(`/api/tareas/${tareaId}/`, {
+			const csrfRes = await fetch(`${API}/api/auth/csrf/`, { credentials: 'include' });
+			const { csrfToken } = await csrfRes.json();
+			await fetch(`${API}/api/tareas/${tareaId}/`, {
 				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRFToken': csrfResult.csrfToken || '',
-				},
-				body: JSON.stringify({
-					titulo: editTitulo.trim(),
-					fecha_asignada: editFecha,
-					horas_estimadas: Number(editHoras),
-					prioridad: editPrioridad,
-					estado: editEstado,
-				}),
-			});
-
-			const result = await response.json().catch(() => ({}));
-			if (!response.ok) {
-				throw new Error(parseApiError(result, 'No se pudo actualizar la tarea.'));
-			}
-
-			setEditandoTareaId(null);
-			await cargarEvento();
-		} catch (err) {
-			setErrorTarea(err.message || 'Error al actualizar la tarea.');
-		} finally {
-			setGuardandoEditTarea(false);
-		}
-	}
-
-	async function cambiarEstadoTarea(tareaId, nuevoEstado) {
-		try {
-			const csrfResponse = await fetch('/api/auth/csrf/');
-			const csrfResult = await csrfResponse.json();
-
-			const response = await fetch(`/api/tareas/${tareaId}/`, {
-				method: 'PATCH',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-CSRFToken': csrfResult.csrfToken || '',
-				},
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
 				body: JSON.stringify({ estado: nuevoEstado }),
 			});
-
-			if (response.ok) {
-				await cargarEvento();
-			}
-		} catch (err) {
-			console.error('Error al actualizar estado:', err);
-		}
+			cargar();
+		} catch { setError('No se pudo actualizar la tarea.'); }
 	}
 
-	async function eliminarTarea(tareaId) {
-		if (!window.confirm('¿Deseas eliminar esta tarea?')) return;
+	async function handleEliminar(tareaId) {
+		if (!confirm('¿Eliminar esta tarea?')) return;
 		try {
-			const csrfResponse = await fetch('/api/auth/csrf/');
-			const csrfResult = await csrfResponse.json();
-
-			const response = await fetch(`/api/tareas/${tareaId}/`, {
+			const csrfRes = await fetch(`${API}/api/auth/csrf/`, { credentials: 'include' });
+			const { csrfToken } = await csrfRes.json();
+			await fetch(`${API}/api/tareas/${tareaId}/`, {
 				method: 'DELETE',
-				headers: {
-					'X-CSRFToken': csrfResult.csrfToken || '',
-				},
+				credentials: 'include',
+				headers: { 'X-CSRFToken': csrfToken },
+			});
+			cargar();
+		} catch { setError('No se pudo eliminar la tarea.'); }
+	}
+
+	function abrirModalReprogramarTarea(tarea) {
+		setTareaAReprogramar(tarea);
+		setReprogFecha(tarea.fecha_asignada);
+		setReprogHoras(tarea.horas_estimadas);
+		setReprogReactivar(true);
+		setReprogError('');
+	}
+
+	async function handleGuardarReprogramarTarea(e) {
+		e.preventDefault();
+		if (!tareaAReprogramar) return;
+		if (!reprogFecha) return setReprogError('Selecciona una fecha válida.');
+
+		setGuardandoReprog(true);
+		setReprogError('');
+		try {
+			const csrfRes = await fetch(`${API}/api/auth/csrf/`, { credentials: 'include' });
+			const { csrfToken } = await csrfRes.json();
+
+			const bodyData = {
+				fecha_asignada: reprogFecha,
+				horas_estimadas: Number(reprogHoras),
+			};
+			if (tareaAReprogramar.estado === 'POSPUESTO' && reprogReactivar) {
+				bodyData.estado = 'PENDIENTE';
+			}
+
+			// Intentar con endpoint reprogramar o PATCH directo
+			let res = await fetch(`${API}/api/tareas/${tareaAReprogramar.id}/reprogramar/`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+				body: JSON.stringify(bodyData),
 			});
 
-			if (response.ok) {
-				await cargarEvento();
+			if (!res.ok) {
+				// Fallback a PATCH si fuera necesario
+				res = await fetch(`${API}/api/tareas/${tareaAReprogramar.id}/`, {
+					method: 'PATCH',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+					body: JSON.stringify(bodyData),
+				});
 			}
+
+			const result = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				const msg = Array.isArray(result?.non_field_errors)
+					? result.non_field_errors[0]
+					: result?.detail || JSON.stringify(result);
+				throw new Error(msg);
+			}
+
+			setTareaAReprogramar(null);
+			cargar();
 		} catch (err) {
-			console.error('Error al eliminar tarea:', err);
+			setReprogError(err.message);
+		} finally {
+			setGuardandoReprog(false);
 		}
 	}
 
-	const horasSeleccionadas = calcularHorasFecha(fechaAsignada);
-	const limiteDiario = evento ? Number(evento.limite_horas_diarias) : 0;
+	async function handleGuardarReprogramarEvento(e) {
+		e.preventDefault();
+		setGuardandoEventoReprog(true);
+		setEventoReprogError('');
+		try {
+			const csrfRes = await fetch(`${API}/api/auth/csrf/`, { credentials: 'include' });
+			const { csrfToken } = await csrfRes.json();
+
+			const payload = {};
+			if (eventoFecha !== undefined) payload.fecha_evento = eventoFecha;
+			if (diasDesplazamiento !== '' && !isNaN(Number(diasDesplazamiento))) {
+				payload.dias_desplazamiento = Number(diasDesplazamiento);
+			}
+
+			const res = await fetch(`${API}/api/eventos/${id}/reprogramar/`, {
+				method: 'POST',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+				body: JSON.stringify(payload),
+			});
+			const result = await res.json().catch(() => ({}));
+			if (!res.ok) {
+				const msg = result?.detail || JSON.stringify(result);
+				throw new Error(msg);
+			}
+
+			setAbrirReprogEvento(false);
+			cargar();
+		} catch (err) {
+			setEventoReprogError(err.message);
+		} finally {
+			setGuardandoEventoReprog(false);
+		}
+	}
+
+	// Cálculos de avance progresivo
+	const tareas = evento?.tareas || [];
+	const total = tareas.length;
+	const hechas = tareas.filter(t => t.estado === 'HECHO');
+	const enProgreso = tareas.filter(t => t.estado === 'EN_PROGRESO');
+	const pendientes = tareas.filter(t => t.estado === 'PENDIENTE');
+	const pospuestas = tareas.filter(t => t.estado === 'POSPUESTO');
+
+	const pctHechas = total > 0 ? (hechas.length / total) * 100 : 0;
+	const pctEnProgreso = total > 0 ? (enProgreso.length / total) * 100 : 0;
+	// Avance progresivo ponderado: Hechas aportan 100%, En progreso aportan 50%
+	const pctAvanceProgresivo = total > 0 ? Math.min(100, Math.round(((hechas.length + enProgreso.length * 0.5) / total) * 100)) : 0;
 
 	return (
 		<main className="create-event-page">
-			<Header currentPage="progreso" />
+			<header className="event-topbar">
+				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+					<span className="event-brand-mark" aria-hidden="true">E</span>
+					<span>EventPro</span>
+				</Link>
+				<nav className="event-nav" aria-label="Navegación principal">
+					<Link to="/hoy">Crear evento</Link>
+					<Link to="/progreso">Mis eventos</Link>
+				</nav>
+				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
+			</header>
 
-			<section className="create-event-main" style={{ width: 'min(100% - 40px, 920px)' }}>
-				<Link className="create-back" to="/progreso">← Volver a Mis Eventos</Link>
+			<div className="det-container">
+				<Link className="create-back" to="/progreso">← Volver a mis eventos</Link>
 
-				{cargando ? (
-					<div className="create-form-panel" style={{ textAlign: 'center', padding: '48px' }}>
-						<p style={{ color: '#68776d' }}>Cargando detalles del evento...</p>
-					</div>
-				) : error ? (
-					<div className="create-form-panel" style={{ textAlign: 'center', padding: '36px' }}>
-						<p className="create-error" style={{ marginBottom: '16px' }}>{error}</p>
-						<button className="continue-button" onClick={() => navigate('/progreso')} style={{ minWidth: 'auto' }}>
-							Regresar al tablero
-						</button>
-					</div>
-				) : evento ? (
-					<div style={{ marginTop: '20px' }}>
-						{/* Encabezado del Evento */}
-						<div className="create-form-panel" style={{ marginTop: 0, marginBottom: '24px', padding: '28px' }}>
-							<p className="section-kicker">DETALLES DEL EVENTO</p>
-							<h1 style={{ fontSize: '38px', margin: '4px 0 8px 0', color: '#263a31' }}>{evento.nombre}</h1>
-							<div style={{ display: 'flex', gap: '20px', fontSize: '13px', color: '#68776d', flexWrap: 'wrap' }}>
-								<span>⏱️ Límite diario: <strong>{evento.limite_horas_diarias} hrs/día</strong></span>
-								<span>📋 Tareas totales: <strong>{evento.tareas ? evento.tareas.length : 0}</strong></span>
+				{cargando && <p className="det-cargando">Cargando…</p>}
+				{error && <p className="det-error" role="alert">{error}</p>}
+
+				{evento && (
+					<>
+						{/* ── Cabecera del evento ── */}
+						<div className="det-header">
+							<div>
+								<p className="section-kicker">DETALLE DEL EVENTO</p>
+								<h1 className="det-titulo">{evento.nombre}</h1>
+								<p className="det-meta">
+									{evento.fecha_evento && `📅 Fecha evento: ${evento.fecha_evento} · `}
+									{tareas.length} tarea{tareas.length !== 1 ? 's' : ''}
+									{tareas.length > 0 && ` · ${pctAvanceProgresivo}% de avance`}
+									{` · Límite ${evento.limite_horas_diarias}h/día`}
+								</p>
+							</div>
+							<div className="det-header-actions">
+								<button
+									className="prog-action prog-action-reprog-evento"
+									onClick={() => setAbrirReprogEvento(true)}
+									title="Reprogramar fecha del evento o desplazar tareas pendientes"
+								>
+									📅 Reprogramar evento
+								</button>
+								<button
+									className="prog-action prog-action-primary det-btn-nueva"
+									onClick={() => setAbrirForm(v => !v)}
+								>
+									{abrirForm ? '✕ Cancelar' : '+ Nueva tarea'}
+								</button>
 							</div>
 						</div>
 
-						{/* Formulario de Agregar Tarea */}
-						<div className="create-form-panel" style={{ marginBottom: '24px', padding: '28px' }}>
-							<h3 style={{ margin: '0 0 16px 0', fontFamily: 'Georgia, serif', color: '#263a31', fontSize: '20px' }}>
-								➕ Agregar Tarea Logística
-							</h3>
-							<form onSubmit={handleCrearTarea} style={{ display: 'grid', gap: '14px' }}>
-								<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-									<label style={{ color: '#34493c', fontSize: '12px', fontWeight: 'bold' }}>
-										Título de la tarea
+						{/* ── Barra de progreso progresiva ── */}
+						{tareas.length > 0 && (
+							<div className="prog-barra-container det-barra">
+								<div className="prog-barra-wrap">
+									<div
+										className="prog-barra"
+										title={`Completadas: ${hechas.length}, En progreso: ${enProgreso.length}, Pendientes: ${pendientes.length}`}
+									>
+										<div
+											className="prog-barra-fill prog-barra-hecho"
+											style={{ width: `${pctHechas}%` }}
+										/>
+										<div
+											className="prog-barra-fill prog-barra-progreso"
+											style={{ width: `${pctEnProgreso}%` }}
+										/>
+									</div>
+									<span className="prog-barra-pct">{pctAvanceProgresivo}% avance</span>
+								</div>
+								<div className="prog-pills-row">
+									<span className="prog-pill pill-hecho">
+										✓ {hechas.length} completada{hechas.length !== 1 ? 's' : ''} ({Math.round(pctHechas)}%)
+									</span>
+									{enProgreso.length > 0 && (
+										<span className="prog-pill pill-progreso">
+											↻ {enProgreso.length} en curso ({Math.round(pctEnProgreso)}%)
+										</span>
+									)}
+									<span className="prog-pill pill-pendiente">
+										⏳ {pendientes.length} pendiente{pendientes.length !== 1 ? 's' : ''}
+									</span>
+									{pospuestas.length > 0 && (
+										<span className="prog-pill pill-pospuesto">
+											↷ {pospuestas.length} pospuesta{pospuestas.length !== 1 ? 's' : ''}
+										</span>
+									)}
+								</div>
+							</div>
+						)}
+
+						{/* ── Formulario nueva tarea ── */}
+						{abrirForm && (
+							<form className="det-form" onSubmit={handleAgregarTarea}>
+								<h2 className="det-form-titulo">Nueva tarea</h2>
+								<div className="det-form-grid">
+									<label className="det-label">
+										Nombre de la tarea
 										<input
-											type="text"
+											className="det-input"
+											name="titulo"
+											value={form.titulo}
+											onChange={handleChange}
+											placeholder="Ej. Contratar catering"
+											maxLength={200}
 											required
-											placeholder="Ej. Contratar banquete"
-											value={titulo}
-											onChange={(e) => setTitulo(e.target.value)}
-											style={{ marginTop: '4px', width: '100%', padding: '8px 12px', border: '1px solid #dce4db', borderRadius: '5px' }}
 										/>
 									</label>
-
-									<label style={{ color: '#34493c', fontSize: '12px', fontWeight: 'bold' }}>
-										Fecha asignada
+									<label className="det-label">
+										Fecha objetivo
 										<input
+											className="det-input"
 											type="date"
+											name="fecha_asignada"
+											value={form.fecha_asignada}
+											onChange={handleChange}
 											required
-											value={fechaAsignada}
-											onChange={(e) => setFechaAsignada(e.target.value)}
-											style={{ marginTop: '4px', width: '100%', padding: '8px 12px', border: '1px solid #dce4db', borderRadius: '5px' }}
 										/>
 									</label>
-
-									<label style={{ color: '#34493c', fontSize: '12px', fontWeight: 'bold' }}>
+									<label className="det-label">
 										Horas estimadas
 										<input
+											className="det-input"
 											type="number"
-											step="0.5"
+											name="horas_estimadas"
+											value={form.horas_estimadas}
+											onChange={handleChange}
 											min="0.5"
 											max="24"
+											step="0.5"
+											placeholder="Ej. 2"
 											required
-											value={horasEstimadas}
-											onChange={(e) => setHorasEstimadas(e.target.value)}
-											style={{ marginTop: '4px', width: '100%', padding: '8px 12px', border: '1px solid #dce4db', borderRadius: '5px' }}
 										/>
 									</label>
-
-									<label style={{ color: '#34493c', fontSize: '12px', fontWeight: 'bold' }}>
+									<label className="det-label">
 										Prioridad
 										<select
-											value={prioridad}
-											onChange={(e) => setPrioridad(e.target.value)}
-											style={{ marginTop: '4px', width: '100%', padding: '8px 12px', border: '1px solid #dce4db', borderRadius: '5px', background: '#fff' }}
+											className="det-input"
+											name="prioridad"
+											value={form.prioridad}
+											onChange={handleChange}
 										>
 											<option value="NORMAL">Normal</option>
 											<option value="ALTA">Alta</option>
@@ -299,205 +458,172 @@ export default function DetalleEvento() {
 										</select>
 									</label>
 								</div>
-
-								{/* Indicador de límite de horas */}
-								<div style={{ background: horasSeleccionadas + Number(horasEstimadas) > limiteDiario ? '#fdf2f0' : '#f0f7ef', padding: '10px 14px', borderRadius: '6px', fontSize: '12px', color: '#263a31' }}>
-									📅 Ocupación el <strong>{fechaAsignada}</strong>: {horasSeleccionadas} hrs ocupadas + {horasEstimadas} hrs nueva = <strong>{horasSeleccionadas + Number(horasEstimadas)} / {limiteDiario} hrs</strong>
-								</div>
-
-								{errorTarea && <p className="create-error" style={{ margin: 0 }}>{errorTarea}</p>}
-
+								{formError && <p className="det-form-error" role="alert">{formError}</p>}
 								<button
-									className="continue-button"
+									className="continue-button det-btn-guardar"
 									type="submit"
-									disabled={guardandoTarea || !titulo.trim()}
-									style={{ justifySelf: 'start', minWidth: '160px' }}
+									disabled={guardando}
 								>
-									{guardandoTarea ? 'Guardando...' : 'Guardar Tarea'}
+									{guardando ? 'Guardando…' : 'Agregar tarea →'}
 								</button>
 							</form>
-						</div>
+						)}
 
-						{/* Lista de Tareas */}
-						<div className="create-form-panel" style={{ padding: '28px' }}>
-							<h3 style={{ margin: '0 0 18px 0', fontFamily: 'Georgia, serif', color: '#263a31', fontSize: '20px' }}>
-								📌 Lista de Tareas Logísticas ({evento.tareas ? evento.tareas.length : 0})
-							</h3>
+						{/* ── Lista de tareas ── */}
+						<section className="det-tareas-section">
+							<h2 className="det-tareas-titulo">
+								Tareas
+								{tareas.length > 0 && <span className="prog-badge badge-proxima">{tareas.length}</span>}
+							</h2>
 
-							{!evento.tareas || evento.tareas.length === 0 ? (
-								<p style={{ color: '#718077', fontSize: '14px', fontStyle: 'italic', margin: 0 }}>
-									No hay tareas asignadas a este evento aún. Agrega una arriba.
-								</p>
-							) : (
-								<div style={{ display: 'grid', gap: '12px' }}>
-									{evento.tareas.map((tarea) => {
-										const prioridadColor = {
-											NORMAL: '#e0ecdb',
-											ALTA: '#ffead8',
-											CRITICA: '#fce2e6',
-										}[tarea.prioridad] || '#eee';
-										const esEditandoTarea = editandoTareaId === tarea.id;
-
-										return (
-											<div
-												key={tarea.id}
-												style={{
-													padding: '14px 16px',
-													border: '1px solid #e4e9df',
-													borderRadius: '6px',
-													background: '#fff',
-												}}
-											>
-												{esEditandoTarea ? (
-													<form onSubmit={(e) => handleGuardarEditTarea(tarea.id, e)} style={{ display: 'grid', gap: '10px' }}>
-														<h4 style={{ margin: 0, fontSize: '14px', color: '#263a31' }}>✏️ Editar Tarea</h4>
-														<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px' }}>
-															<label style={{ fontSize: '11px', fontWeight: 'bold' }}>
-																Título
-																<input
-																	type="text"
-																	required
-																	value={editTitulo}
-																	onChange={(e) => setEditTitulo(e.target.value)}
-																	style={{ marginTop: '4px', width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px' }}
-																/>
-															</label>
-															<label style={{ fontSize: '11px', fontWeight: 'bold' }}>
-																Fecha
-																<input
-																	type="date"
-																	required
-																	value={editFecha}
-																	onChange={(e) => setEditFecha(e.target.value)}
-																	style={{ marginTop: '4px', width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px' }}
-																/>
-															</label>
-															<label style={{ fontSize: '11px', fontWeight: 'bold' }}>
-																Horas
-																<input
-																	type="number"
-																	step="0.5"
-																	min="0.5"
-																	max="24"
-																	required
-																	value={editHoras}
-																	onChange={(e) => setEditHoras(e.target.value)}
-																	style={{ marginTop: '4px', width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px' }}
-																/>
-															</label>
-															<label style={{ fontSize: '11px', fontWeight: 'bold' }}>
-																Prioridad
-																<select
-																	value={editPrioridad}
-																	onChange={(e) => setEditPrioridad(e.target.value)}
-																	style={{ marginTop: '4px', width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px' }}
-																>
-																	<option value="NORMAL">Normal</option>
-																	<option value="ALTA">Alta</option>
-																	<option value="CRITICA">Crítica</option>
-																</select>
-															</label>
-															<label style={{ fontSize: '11px', fontWeight: 'bold' }}>
-																Estado
-																<select
-																	value={editEstado}
-																	onChange={(e) => setEditEstado(e.target.value)}
-																	style={{ marginTop: '4px', width: '100%', padding: '6px', border: '1px solid #ccc', borderRadius: '4px' }}
-																>
-																	<option value="PENDIENTE">Pendiente</option>
-																	<option value="EN_PROGRESO">En Progreso</option>
-																	<option value="HECHO">Hecho ✓</option>
-																	<option value="POSPUESTO">Pospuesto</option>
-																</select>
-															</label>
-														</div>
-														<div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-															<button className="continue-button" type="submit" disabled={guardandoEditTarea} style={{ minWidth: 'auto', padding: '4px 12px', fontSize: '12px' }}>
-																{guardandoEditTarea ? 'Guardando...' : 'Guardar Cambios'}
-															</button>
-															<button type="button" onClick={cancelarEdicionTarea} style={{ background: 'none', border: '1px solid #ccc', borderRadius: '4px', cursor: 'pointer', padding: '4px 10px', fontSize: '12px' }}>
-																Cancelar
-															</button>
-														</div>
-													</form>
-												) : (
-													<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-														<div style={{ flex: '1 1 250px' }}>
-															<div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-																<strong style={{ fontSize: '15px', color: '#263a31' }}>{tarea.titulo}</strong>
-																<span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '10px', background: prioridadColor, fontWeight: 'bold', color: '#263a31' }}>
-																	{tarea.prioridad}
-																</span>
-															</div>
-															<div style={{ fontSize: '12px', color: '#68776d', display: 'flex', gap: '16px' }}>
-																<span>📅 {tarea.fecha_asignada}</span>
-																<span>⏱️ {tarea.horas_estimadas} hrs</span>
-															</div>
-														</div>
-
-														<div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-															<select
-																value={tarea.estado}
-																onChange={(e) => cambiarEstadoTarea(tarea.id, e.target.value)}
-																style={{
-																	padding: '6px 10px',
-																	fontSize: '12px',
-																	borderRadius: '5px',
-																	border: '1px solid #dce4db',
-																	fontWeight: 'bold',
-																	color: tarea.estado === 'HECHO' ? '#176b52' : '#263a31',
-																	background: tarea.estado === 'HECHO' ? '#e2f0d9' : '#fff',
-																}}
-															>
-																<option value="PENDIENTE">Pendiente</option>
-																<option value="EN_PROGRESO">En Progreso</option>
-																<option value="HECHO">Hecho ✓</option>
-																<option value="POSPUESTO">Pospuesto</option>
-															</select>
-
-															<button
-																type="button"
-																onClick={() => iniciarEdicionTarea(tarea)}
-																style={{
-																	background: 'none',
-																	border: 'none',
-																	color: '#347554',
-																	cursor: 'pointer',
-																	fontSize: '14px',
-																	padding: '4px 6px',
-																}}
-																title="Editar tarea"
-															>
-																✏️
-															</button>
-
-															<button
-																type="button"
-																onClick={() => eliminarTarea(tarea.id)}
-																style={{
-																	background: 'none',
-																	border: 'none',
-																	color: '#b34438',
-																	cursor: 'pointer',
-																	fontSize: '16px',
-																	padding: '4px 8px',
-																}}
-																title="Eliminar tarea"
-															>
-																✕
-															</button>
-														</div>
-													</div>
-												)}
-											</div>
-										);
-									})}
+							{tareas.length === 0 && (
+								<div className="det-sin-tareas">
+									<p>Este evento aún no tiene tareas.</p>
+									<button
+										className="prog-action prog-action-primary"
+										onClick={() => setAbrirForm(true)}
+									>
+										+ Agregar la primera tarea
+									</button>
 								</div>
 							)}
+
+							<div className="det-tareas-lista">
+								{tareas.map(t => (
+									<TareaFila
+										key={t.id}
+										tarea={t}
+										onEstado={handleEstado}
+										onEliminar={handleEliminar}
+										onAbrirReprogramar={abrirModalReprogramarTarea}
+									/>
+								))}
+							</div>
+						</section>
+					</>
+				)}
+
+				{/* ── Modal Reprogramar Tarea ── */}
+				{tareaAReprogramar && (
+					<div className="modal-overlay" onClick={() => setTareaAReprogramar(null)}>
+						<div className="modal-card" onClick={e => e.stopPropagation()}>
+							<div className="modal-head">
+								<div>
+									<p className="section-kicker">REPROGRAMAR TAREA</p>
+									<h3 className="modal-title">{tareaAReprogramar.titulo}</h3>
+								</div>
+								<button className="modal-close" onClick={() => setTareaAReprogramar(null)}>✕</button>
+							</div>
+							<form onSubmit={handleGuardarReprogramarTarea} className="modal-body">
+								<p className="modal-meta">
+									Fecha actual: <strong>{tareaAReprogramar.fecha_asignada}</strong> · {tareaAReprogramar.horas_estimadas}h
+								</p>
+								<label className="det-label">
+									Nueva fecha asignada
+									<input
+										type="date"
+										className="det-input"
+										value={reprogFecha}
+										onChange={e => { setReprogFecha(e.target.value); setReprogError(''); }}
+										required
+									/>
+								</label>
+								<label className="det-label">
+									Horas estimadas
+									<input
+										type="number"
+										className="det-input"
+										value={reprogHoras}
+										onChange={e => { setReprogHoras(e.target.value); setReprogError(''); }}
+										min="0.5"
+										max="24"
+										step="0.5"
+										required
+									/>
+								</label>
+								{tareaAReprogramar.estado === 'POSPUESTO' && (
+									<label className="det-label modal-checkbox-label">
+										<input
+											type="checkbox"
+											checked={reprogReactivar}
+											onChange={e => setReprogReactivar(e.target.checked)}
+										/>
+										Reactivar como tarea PENDIENTE
+									</label>
+								)}
+								{reprogError && <p className="det-form-error" role="alert">{reprogError}</p>}
+								<div className="modal-actions">
+									<button type="button" className="prog-action" onClick={() => setTareaAReprogramar(null)}>
+										Cancelar
+									</button>
+									<button type="submit" className="continue-button modal-btn-guardar" disabled={guardandoReprog}>
+										{guardandoReprog ? 'Guardando…' : 'Guardar nueva fecha →'}
+									</button>
+								</div>
+							</form>
 						</div>
 					</div>
-				) : null}
-			</section>
+				)}
+
+				{/* ── Modal Reprogramar Evento ── */}
+				{abrirReprogEvento && (
+					<div className="modal-overlay" onClick={() => setAbrirReprogEvento(false)}>
+						<div className="modal-card" onClick={e => e.stopPropagation()}>
+							<div className="modal-head">
+								<div>
+									<p className="section-kicker">REPROGRAMAR EVENTO</p>
+									<h3 className="modal-title">{evento.nombre}</h3>
+								</div>
+								<button className="modal-close" onClick={() => setAbrirReprogEvento(false)}>✕</button>
+							</div>
+							<form onSubmit={handleGuardarReprogramarEvento} className="modal-body">
+								<p className="modal-meta">
+									Tareas pendientes: <strong>{pendientes.length}</strong> de {tareas.length}
+								</p>
+								<label className="det-label">
+									Fecha del evento (opcional)
+									<input
+										type="date"
+										className="det-input"
+										value={eventoFecha}
+										onChange={e => { setEventoFecha(e.target.value); setEventoReprogError(''); }}
+									/>
+								</label>
+								{pendientes.length > 0 && (
+									<div className="modal-shift-section">
+										<p className="modal-subheading">Mover tareas pendientes en bloque:</p>
+										<div className="quick-shift-buttons">
+											<button type="button" className="prog-action" onClick={() => setDiasDesplazamiento('1')}>+1 día</button>
+											<button type="button" className="prog-action" onClick={() => setDiasDesplazamiento('3')}>+3 días</button>
+											<button type="button" className="prog-action" onClick={() => setDiasDesplazamiento('7')}>+1 sem (7d)</button>
+											<button type="button" className="prog-action" onClick={() => setDiasDesplazamiento('14')}>+2 sem (14d)</button>
+										</div>
+										<label className="det-label" style={{ marginTop: '8px' }}>
+											Días a desplazar (+/- días)
+											<input
+												type="number"
+												className="det-input"
+												value={diasDesplazamiento}
+												onChange={e => { setDiasDesplazamiento(e.target.value); setEventoReprogError(''); }}
+												placeholder="Ej. 7"
+											/>
+										</label>
+									</div>
+								)}
+								{eventoReprogError && <p className="det-form-error" role="alert">{eventoReprogError}</p>}
+								<div className="modal-actions">
+									<button type="button" className="prog-action" onClick={() => setAbrirReprogEvento(false)}>
+										Cancelar
+									</button>
+									<button type="submit" className="continue-button modal-btn-guardar" disabled={guardandoEventoReprog}>
+										{guardandoEventoReprog ? 'Reprogramando…' : 'Aplicar reprogramación →'}
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				)}
+			</div>
 		</main>
 	);
 }

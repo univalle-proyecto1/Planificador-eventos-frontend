@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { parseApiError } from '../utils/api';
 import './loguin.css';
 
 const AUTH_ENDPOINT = import.meta.env.VITE_AUTH_ENDPOINT || '/api/auth/login/';
@@ -61,10 +60,11 @@ export default function Loguin() {
 			const result = await response.json().catch(() => ({}));
 
 			if (!response.ok) {
+				const message = result.message || result.error;
 				if (result.errors && typeof result.errors === 'object') {
 					setErrors((current) => ({ ...current, ...result.errors }));
 				}
-				throw new Error(parseApiError(result, 'No pudimos iniciar sesión. Revisa tus datos e inténtalo de nuevo.'));
+				throw new Error(message || 'No pudimos iniciar sesión. Revisa tus datos e inténtalo de nuevo.');
 			}
 
 			setStatus('success');
@@ -78,7 +78,6 @@ export default function Loguin() {
 			);
 		}
 	}
-
 
 	return (
 		<main className="login-page">

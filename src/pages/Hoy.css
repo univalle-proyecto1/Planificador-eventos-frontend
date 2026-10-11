@@ -1,5 +1,6 @@
 #root:has(.event-home),
-#root:has(.create-event-page) {
+#root:has(.create-event-page),
+#root:has(.prog-page) {
   width: min(100%, 1440px);
   border: 0;
   text-align: left;
@@ -380,6 +381,102 @@
   color: #63806b;
   font-weight: 800;
 }
+
+/* ── Botón "¿Cómo se ordena?" y popover ── */
+.chooser-heading-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.orden-tooltip-wrap {
+  position: relative;
+}
+
+.orden-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 8px;
+  border: 1px solid #c8d9c2;
+  border-radius: 20px;
+  color: #387454;
+  background: #eef5eb;
+  cursor: pointer;
+  font: 700 11px 'Trebuchet MS', 'Segoe UI', sans-serif;
+  letter-spacing: 0.2px;
+  transition: background 140ms ease, border-color 140ms ease;
+  white-space: nowrap;
+}
+
+.orden-btn:hover {
+  background: #e2eedc;
+  border-color: #a4c49c;
+}
+
+.orden-btn:focus-visible {
+  outline: 3px solid #f3a07c;
+  outline-offset: 3px;
+}
+
+.orden-btn-icon {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  color: white;
+  background: #387454;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.orden-popover {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  z-index: 20;
+  width: 280px;
+  padding: 16px 18px;
+  border-radius: 10px;
+  color: #e8f0e5;
+  background: #1e3a2a;
+  box-shadow: 0 8px 28px rgba(20, 40, 28, 0.28);
+  animation: popover-in 160ms ease;
+}
+
+.orden-popover::before {
+  content: '';
+  position: absolute;
+  top: -6px;
+  right: 18px;
+  width: 12px;
+  height: 12px;
+  background: #1e3a2a;
+  transform: rotate(45deg);
+  border-radius: 2px;
+}
+
+.orden-popover-title {
+  display: block;
+  margin-bottom: 8px;
+  color: #fff;
+  font-size: 13px;
+}
+
+.orden-popover p {
+  margin: 0;
+  color: #b8cebc;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+@keyframes popover-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 
 .create-event-page {
   min-height: 100svh;

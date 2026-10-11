@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
+import { useState, useRef, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import './Hoy.css';
 
 const tiposEvento = [
@@ -17,6 +16,19 @@ const tiposEvento = [
 export default function Hoy() {
 	const navigate = useNavigate();
 	const [tipoSeleccionado, setTipoSeleccionado] = useState('');
+	const [tooltipAbierto, setTooltipAbierto] = useState(false);
+	const tooltipRef = useRef(null);
+
+	useEffect(() => {
+		if (!tooltipAbierto) return;
+		function handleClick(e) {
+			if (tooltipRef.current && !tooltipRef.current.contains(e.target)) {
+				setTooltipAbierto(false);
+			}
+		}
+		document.addEventListener('mousedown', handleClick);
+		return () => document.removeEventListener('mousedown', handleClick);
+	}, [tooltipAbierto]);
 
 	function continuar() {
 		if (tipoSeleccionado) {
@@ -26,8 +38,17 @@ export default function Hoy() {
 
 	return (
 		<main className="event-home">
-			<Header currentPage="hoy" />
-
+			<header className="event-topbar">
+				<Link className="event-brand" to="/hoy" aria-label="EventPro, inicio">
+					<span className="event-brand-mark" aria-hidden="true">E</span>
+					<span>EventPro</span>
+				</Link>
+				<nav className="event-nav" aria-label="Navegación principal">
+					<span className="event-nav-current">Crear evento</span>
+					<Link to="/progreso">Mis eventos</Link>
+				</nav>
+				<span className="event-user-mark" aria-label="Tu perfil">EP</span>
+			</header>
 
 			<section className="event-intro" aria-labelledby="event-title">
 				<div className="event-intro-copy">
@@ -48,7 +69,30 @@ export default function Hoy() {
 						<p className="section-kicker">PRIMER PASO</p>
 						<h2 id="occasion-title">Elige el tipo de evento</h2>
 					</div>
-					<p className="selection-count">{tipoSeleccionado ? '1 ocasión seleccionada' : 'Selecciona una ocasión'}</p>
+					<div className="chooser-heading-right">
+						<p className="selection-count">{tipoSeleccionado ? '1 ocasión seleccionada' : 'Selecciona una ocasión'}</p>
+						<div className="orden-tooltip-wrap" ref={tooltipRef}>
+							<button
+								className="orden-btn"
+								type="button"
+								aria-expanded={tooltipAbierto}
+								onClick={() => setTooltipAbierto((v) => !v)}
+							>
+								<span className="orden-btn-icon" aria-hidden="true">?</span>
+								¿Cómo se ordena?
+							</button>
+							{tooltipAbierto && (
+								<div className="orden-popover" role="tooltip">
+									<strong className="orden-popover-title">Regla de prioridad</strong>
+									<p>
+										Los tipos de evento se agrupan por popularidad y ocasión. Dentro de cada grupo
+										se ordenan por frecuencia de uso. En caso de empate, se muestra primero
+										el de menor complejidad estimada.
+									</p>
+								</div>
+							)}
+						</div>
+					</div>
 				</div>
 
 				<div className="occasion-grid">
